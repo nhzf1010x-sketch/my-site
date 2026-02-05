@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Phone Style Website</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+    body {
+      background: #000;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    /* Phone container becomes full screen on mobile */
+    .phone {
+      width: 100vw;
+      height: 100vh;
+      background: #000;
+      position: relative;
+    }
+
+    /* Notch */
+    .notch {
+      width: 160px;
+      height: 28px;
+      background: #000;
+      border-radius: 0 0 18px 18px;
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+    }
+
+    /* Screen */
+    .screen {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(180deg, #ffffff, #f1f1f1);
+      padding: 56px 16px 24px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Status bar */
+    .status {
+      position: absolute;
+      top: 12px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      color: #111;
+      z-index: 5;
+    }
+
+    /* Apps grid */
+    .apps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+      margin-top: 48px;
+    }
+
+    .app {
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .app img {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      box-shadow: 0 6px 14px rgba(0,0,0,0.18);
+      margin-bottom: 6px;
+    }
+
+    .app span {
+      font-size: 12px;
+      color: #222;
+    }
+
+    /* App modal */
+    .modal {
+      position: absolute;
+      inset: 0;
+      background: #ffffff;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      text-align: center;
+      padding: 24px;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      font-size: 22px;
+      cursor: pointer;
+    }
+
+    .modal p {
+      font-size: 16px;
+      color: #333;
+    }
+
+    .notes-header {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+
+    .notes-list {
+      width: 100%;
+    }
+
+    .note-item {
+      padding: 14px;
+      border-bottom: 1px solid #eee;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    .note-full {
+      white-space: pre-line;
+      font-size: 16px;
+      line-height: 1.7;
+      color: #111;
+    }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      width: 100%;
+    }
+
+    .gallery img, .gallery video {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      border-radius: 12px;
+      cursor: pointer;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .viewer {
+      position: absolute;
+      inset: 0;
+      background: #000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 30;
+    }
+
+    .viewer.active { display: flex; }
+
+    .viewer img, .viewer video {
+      max-width: 100%;
+      max-height: 100%;
+      animation: zoomIn 0.25s ease;
+    }
+
+    @keyframes zoomIn {
+      from { transform: scale(0.95); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .counter {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: #fff;
+      font-size: 14px;
+    }
+
+    .viewer-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      color: #fff;
+      font-size: 22px;
+      cursor: pointer;
+    }
+
+    /* Hide desktop framing */
+    @media (min-width: 768px) {
+      body { background: #111; }
+      .phone { max-width: 420px; max-height: 840px; border-radius: 32px; overflow: hidden; }
+    }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <div class="notch"></div>
+
+    <audio id="bgMusic" src="silly-cat.mp3" autoplay loop></audio>
+
+    <div class="screen">
+      <div class="status">
+        <div id="time">--:--</div>
+        <div>📶 🔋</div>
+      </div>
+
+      <div class="apps">
+        <div class="app" onclick="openHome()">
+          <img src="icons/home.png" alt="Home" />
+          <span>Home</span>
+        </div>
+        <div class="app" onclick="openGallery()">
+          <img src="icons/gallery.png" alt="Gallery" />
+          <span>Gallery</span>
+        </div>
+        <div class="app" onclick="openNotes()">
+          <img src="icons/notes.png" alt="Notes" />
+          <span>Notes</span>
+        </div>
+        <div class="app">
+          <img src="icons/music.png" alt="Music" />
+          <span>Music</span>
+        </div>
+        <div class="app">
+          <img src="icons/messages.png" alt="Messages" />
+          <span>Messages</span>
+        </div>
+        <div class="app">
+          <img src="icons/settings.png" alt="Settings" />
+          <span>Settings</span>
+        </div>
+      </div>
+
+      <!-- Notes modal -->
+      <div class="modal" id="notesModal">
+        <div class="close" onclick="closeNotes()">✕</div>
+        <div class="notes-header">Notes</div>
+        <div class="notes-list">
+          <div class="note-item" onclick="openNote()">
+            🎂✨ كل عام وانت بخير حبيبي
+          </div>
+        </div>
+      </div>
+
+      <!-- Note content -->
+      <div class="modal" id="noteContent">
+        <div class="close" onclick="closeNote()">✕</div>
+        <div class="note-full">
+كل عام و أنت بخير أنس حقي 💓💓😔،
+
+كل عام و أنت معاي
+واحلى شيء صار لي بهذي السنوات كلها
+أنت شي مررره حلو وغير حياتي تماماً
+تدري اني اشوفك احسن واحد بذي الدنيا
+كل عام و حبنا يكبر
+كل عام وكل سنه وكل لحظه وانت معي
+وماتفارقني ولا لحظه
+ادعي ربي يحفظك لي من كل شر
+ادعي هذا اليوم وكل الأيام ان أنت بخير
+ومافيك الا العافيه،
+حبيبي وروحي وسندي بهذي الدنيا
+ماقد شفت مثلك شخص ولا راح اشوف غيرك بالدنيا
+اللي صارت تجنن بوجودك أنت.. وضحكتك الحلوه ...
+        </div>
+      </div>
+
+      <!-- Home modal -->
+      <div class="modal" id="homeModal">
+        <div class="close" onclick="closeHome()">✕</div>
+        <p>This application cannot be opened.</p>
+      </div>
+
+      <!-- Gallery modal -->
+      <div class="modal" id="galleryModal">
+        <div class="close" onclick="closeGallery()">✕</div>
+        <div class="gallery" style="animation: fadeUp 0.35s ease;">
+          <img src="gallery/IMG_0583.jpg" onclick="openViewer(0)" />
+          <img src="gallery/IMG_2089.jpg" onclick="openViewer(1)" />
+          <img src="gallery/IMG_20251006_214619_edit_616602282985199.jpg" onclick="openViewer(2)" />
+          <img src="gallery/IMG_20251120_154851_404.jpg" onclick="openViewer(3)" />
+          <img src="gallery/IMG_20251123_141355_656.jpg" onclick="openViewer(4)" />
+          <img src="gallery/IMG_20251123_141357_684.jpg" onclick="openViewer(5)" />
+          <img src="gallery/Screenshot_20250903_225625.jpg" onclick="openViewer(6)" />
+          <img src="gallery/خلفيه.jpg" onclick="openViewer(7)" />
+          <img src="gallery/نظاره.jpg" onclick="openViewer(8)" />
+          <video src="gallery/Picsart_25-02-04_15-58-50-660.mp4" onclick="openViewer(9)"></video>
+        </div>
+      </div>
+
+      <div class="viewer" id="viewer">
+        <div class="viewer-close" onclick="closeViewer()">✕</div>
+        <div class="counter" id="counter"></div>
+        <div id="viewerContent"></div>
+      </div>
+    </div>
+    </div>
+  </div>
+
+  <script>
+    // Real device time
+    function updateTime() {
+      const now = new Date();
+      const hours = now.getHours().toString().padStart(2, '0');
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      document.getElementById('time').textContent = `${hours}:${minutes}`;
+    }
+    setInterval(updateTime, 1000);
+    updateTime();
+
+    // Home app
+    function openHome() {
+      document.getElementById('homeModal').classList.add('active');
+    }
+    function closeHome() {
+      document.getElementById('homeModal').classList.remove('active');
+    }
+
+    function openNotes() {
+      document.getElementById('notesModal').classList.add('active');
+    }
+    function closeNotes() {
+      document.getElementById('notesModal').classList.remove('active');
+    }
+    function openNote() {
+      document.getElementById('notesModal').classList.remove('active');
+      document.getElementById('noteContent').classList.add('active');
+    }
+    function closeNote() {
+      document.getElementById('noteContent').classList.remove('active');
+    }
+
+    function openGallery() {
+      document.getElementById('galleryModal').classList.add('active');
+    }
+
+    function closeGallery() {
+      document.getElementById('galleryModal').classList.remove('active');
+    }
+
+    const media = [
+      'IMG_0583.jpg','IMG_2089.jpg','IMG_20251006_214619_edit_616602282985199.jpg','IMG_20251120_154851_404.jpg','IMG_20251123_141355_656.jpg','IMG_20251123_141357_684.jpg','Screenshot_20250903_225625.jpg','خلفيه.jpg','نظاره.jpg','Picsart_25-02-04_15-58-50-660.mp4'
+    ];
+    let currentIndex = 0;
+
+    function openViewer(index) {
+      currentIndex = index;
+      renderViewer();
+      document.getElementById('viewer').classList.add('active');
+    }
+
+    function closeViewer() {
+      document.getElementById('viewer').classList.remove('active');
+    }
+
+    function renderViewer() {
+      const container = document.getElementById('viewerContent');
+      container.innerHTML = '';
+      const file = media[currentIndex];
+      let el;
+      if (file.endsWith('.mp4')) {
+        el = document.createElement('video');
+        el.src = 'gallery/' + file;
+        el.controls = true;
+        el.autoplay = true;
+      } else {
+        el = document.createElement('img');
+        el.src = 'gallery/' + file;
+      }
+      container.appendChild(el);
+      document.getElementById('counter').textContent = `${currentIndex + 1} / ${media.length}`;
+    }
+
+    let startX = 0;
+    const viewer = document.getElementById('viewer');
+    viewer.addEventListener('touchstart', e => startX = e.touches[0].clientX);
+    viewer.addEventListener('touchend', e => {
+      const diff = e.changedTouches[0].clientX - startX;
+      if (diff > 50 && currentIndex > 0) { currentIndex--; renderViewer(); }
+      if (diff < -50 && currentIndex < media.length - 1) { currentIndex++; renderViewer(); }
+    });
+
+    // Ensure music plays on mobile after interaction
+    document.body.addEventListener('click', () => {
+      const music = document.getElementById('bgMusic');
+      if (music.paused) music.play();
+    }, { once: true });
+  </script>
+</body>
+</html>
